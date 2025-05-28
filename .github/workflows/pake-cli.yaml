@@ -169,6 +169,21 @@ jobs:
           Invoke-WebRequest "https://awscli.amazonaws.com/AWSCLIV2.msi" -OutFile "AWSCLIV2.msi"
           Start-Process msiexec.exe -Wait -ArgumentList '/i AWSCLIV2.msi /quiet'
 
+      - name: List output files
+        run: ls -lh node_modules/pake-cli/output/
+
+      - name: Compress output files into zip (Linux/macOS)
+        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
+        run: |
+          cd node_modules/pake-cli
+          zip -r output-${{ inputs.platform }}.zip output/*
+
+      - name: Compress output files into zip (Windows)
+        if: inputs.platform == 'windows-latest'
+        run: |
+          Compress-Archive -Path node_modules\pake-cli\output\* -DestinationPath node_modules\pake-cli\output-${{ inputs.platform }}.zip
+        shell: pwsh
+
       - name: Upload to S3
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
