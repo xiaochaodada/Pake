@@ -205,5 +205,5 @@ jobs:
           -H "Content-Type: application/x-www-form-urlencoded" \
           --data-urlencode "task_id=${{ inputs.task_id }}" \
           --data-urlencode "run_id=${{ github.run_id }}" \
-          --data-urlencode "name=output-${{ inputs.platform }}.zip" \
-          --data-urlencode "download_url=${{ inputs.platform }}-${{ github.run_id }}.zip"
+          --data-urlencode "name=output-${{ inputs.platform }}.dmg" \
+          --data-urlencode "download_url=${{ inputs.platform }}-${{ github.run_id }}.dmg"
