@@ -163,15 +163,15 @@ jobs:
 
 
       - name: Notify backend via callback
-  if: ${{ inputs.callback_url }}
-  run: |
-    curl -X POST "${{ inputs.callback_url }}" \
-      -H "Content-Type: application/json" \
-      -d @- <<EOF
-{
-  "task_id": "${{ inputs.task_id }}",
-  "run_id": "${{ github.run_id }}",
-  "name": "output-${{ inputs.platform }}.zip",
-  "download_url": "https://github.com/${{ github.repository }}/releases/latest/download/output-${{ inputs.platform }}.zip"
-}
-EOF
+        if: ${{ inputs.callback_url }}
+        run: |
+          curl -X POST "${{ inputs.callback_url }}" \
+            -H "Content-Type: application/json" \
+            -d @- <<EOF
+      {
+        "task_id": "${{ inputs.task_id }}",
+        "run_id": "${{ github.run_id }}",
+        "name": "output-${{ inputs.platform }}.zip",
+        "download_url": "https://github.com/${{ github.repository }}/releases/latest/download/output-${{ inputs.platform }}.zip"
+      }
+      EOF
