@@ -150,6 +150,21 @@ jobs:
             node_modules/pake-cli/src-tauri/target/
           key: ${{ inputs.platform }}-cargo-${{ hashFiles('node_modules/pake-cli/src-tauri/Cargo.lock') }}
 
+      - name: Configure AWS credentials
+        if: ${{ secrets.AWS_ACCESS_KEY_ID && secrets.AWS_SECRET_ACCESS_KEY }}
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: auto
+
+      - name: Upload to S3
+        if: ${{ secrets.AWS_ACCESS_KEY_ID && secrets.AWS_SECRET_ACCESS_KEY }}
+        run: | 
+          aws s3 cp node_modules/pake-cli/output/output-${{ inputs.platform }}.zip \
+            s3://app/${{ inputs.platform }}-${{ github.run_id }}.zip \
+            --acl public-read --content-disposition "attachment; filename=install-${{ inputs.platform }}.zip" --endpoint-url https://fa2c9bb622bf29e5b634c11a6b5b7050.r2.cloudflarestorage.com
+
       - name: Notify backend via callback
         if: ${{ inputs.callback_url }}
         run: |
@@ -158,4 +173,4 @@ jobs:
           --data-urlencode "task_id=${{ inputs.task_id }}" \
           --data-urlencode "run_id=${{ github.run_id }}" \
           --data-urlencode "name=output-${{ inputs.platform }}.zip" \
-          --data-urlencode "download_url=https://github.com/${{ github.repository }}/releases/latest/download/output-${{ inputs.platform }}.zip"
+          --data-urlencode "download_url=${{ inputs.platform }}-${{ github.run_id }}.zip"
