@@ -52,12 +52,7 @@ on:
           - 'deb'
           - 'appimage'
           - 'rpm'
-      task_id:
-        description: 'Task ID for tracking'
-        required: false
-      callback_url:
-        description: 'Callback URL to notify when done'
-        required: false
+
 jobs:
   build:
     name: ${{ inputs.platform }}
