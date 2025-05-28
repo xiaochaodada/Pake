@@ -150,18 +150,20 @@ jobs:
             node_modules/pake-cli/src-tauri/target/
           key: ${{ inputs.platform }}-cargo-${{ hashFiles('node_modules/pake-cli/src-tauri/Cargo.lock') }}
 
-      - name: Configure AWS credentials
+      - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v3
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
 
       - name: Upload to S3
-        run: | 
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
           aws s3 cp node_modules/pake-cli/output/output-${{ inputs.platform }}.zip \
-            s3://app/${{ inputs.platform }}-${{ github.run_id }}.zip \
-            --acl public-read --region auto --content-disposition "attachment; filename=install-${{ inputs.platform }}.zip" --endpoint-url https://fa2c9bb622bf29e5b634c11a6b5b7050.r2.cloudflarestorage.com
+          s3://app/${{ inputs.platform }}-${{ github.run_id }}.zip \
+          --acl public-read \
+          --region auto \
+          --content-disposition "attachment; filename=install-${{ inputs.platform }}.zip" \
+          --endpoint-url https://fa2c9bb622bf29e5b634c11a6b5b7050.r2.cloudflarestorage.com
         continue-on-error: true
 
       - name: Notify backend via callback
