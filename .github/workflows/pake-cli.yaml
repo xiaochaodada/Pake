@@ -150,13 +150,24 @@ jobs:
             node_modules/pake-cli/src-tauri/target/
           key: ${{ inputs.platform }}-cargo-${{ hashFiles('node_modules/pake-cli/src-tauri/Cargo.lock') }}
 
-      - name: Configure AWS
-        uses: aws-actions/configure-aws-credentials@v3
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
-        run: echo "AWS credentials set without validation"
+      - name: Install AWS CLI (Ubuntu)
+        if: inputs.platform == 'ubuntu-24.04'
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+
+      - name: Install AWS CLI (macOS)
+        if: inputs.platform == 'macos-latest'
+        run: |
+          brew install awscli
+
+      - name: Install AWS CLI (Windows)
+        if: inputs.platform == 'windows-latest'
+        shell: powershell
+        run: |
+          Invoke-WebRequest "https://awscli.amazonaws.com/AWSCLIV2.msi" -OutFile "AWSCLIV2.msi"
+          Start-Process msiexec.exe -Wait -ArgumentList '/i AWSCLIV2.msi /quiet'
 
       - name: Upload to S3
         env:
