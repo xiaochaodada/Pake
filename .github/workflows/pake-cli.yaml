@@ -172,29 +172,30 @@ jobs:
       - name: List output files
         run: ls -lh node_modules/pake-cli/output/
 
-      - name: Compress output files into zip (Linux/macOS)
-        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
-        run: |
-          cd node_modules/pake-cli
-          zip -r output-${{ inputs.platform }}.zip output/*
-
-      - name: Compress output files into zip (Windows)
-        if: inputs.platform == 'windows-latest'
-        run: |
-          Compress-Archive -Path node_modules\pake-cli\output\* -DestinationPath node_modules\pake-cli\output-${{ inputs.platform }}.zip
-        shell: pwsh
+#      - name: Compress output files into zip (Linux/macOS)
+#        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
+#        run: |
+#          cd node_modules/pake-cli
+#          zip -r output-${{ inputs.platform }}.zip output/*
+#
+#      - name: Compress output files into zip (Windows)
+#        if: inputs.platform == 'windows-latest'
+#        run: |
+#          Compress-Archive -Path node_modules\pake-cli\output\* -DestinationPath node_modules\pake-cli\output-${{ inputs.platform }}.zip
+#        shell: pwsh
 
       - name: Upload to S3
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          aws s3 cp node_modules/pake-cli/output/output-${{ inputs.platform }}.zip \
-          s3://app/${{ inputs.platform }}-${{ github.run_id }}.zip \
+          aws s3 cp node_modules/pake-cli/output/${{ inputs.name }}.dmg \
+          s3://app/${{ inputs.platform }}-${{ github.run_id }}.dmg \
           --acl public-read \
           --region auto \
-          --content-disposition "attachment; filename=install-${{ inputs.platform }}.zip" \
+          --content-disposition "attachment; filename=install-${{ inputs.platform }}.dmg" \
           --endpoint-url https://fa2c9bb622bf29e5b634c11a6b5b7050.r2.cloudflarestorage.com
+
         continue-on-error: true
 
       - name: Notify backend via callback
