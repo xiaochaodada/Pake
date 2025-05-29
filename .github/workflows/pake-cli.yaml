@@ -221,12 +221,18 @@ jobs:
           DEST=s3://$BUCKET/${{ inputs.platform }}-${{ github.run_id }}.$EXT
 
           echo "Uploading $FILE to $DEST"
+          CMD = ""
+          if [ -n "$REGION" ]; then
+            CMD+=" --region $REGION"
+          fi
+          if [ -n "$ENDPOINT_URL" ]; then
+            CMD+=" --endpoint-url $ENDPOINT_URL"
+          fi  
           
           aws s3 cp "$FILE" "$DEST" \
           --acl public-read \
-          --region $REGION \
-          --content-disposition "attachment; filename=install-${{ inputs.platform }}.dmg" \
-          --endpoint-url $ENDPOINT_URL
+          $CMD \
+          --content-disposition "attachment; filename=install-${{ inputs.platform }}.dmg" 
 
         continue-on-error: true
 
@@ -251,12 +257,20 @@ jobs:
           $dest = "s3://$env:BUCKET/${{ inputs.platform }}-${{ github.run_id }}.$ext"
 
           Write-Host "Uploading $file to $dest"
-
+          $ExtraArgs = @()
+  
+          if ($env:REGION) {
+           $ExtraArgs += "--region"
+           $ExtraArgs += "$env:REGION"
+           }
+          if ($env:ENDPOINT_URL) {
+           $ExtraArgs += "--endpoint-url"
+           $ExtraArgs += "$env:ENDPOINT_URL"
+           }
           aws s3 cp $file $dest `
             --acl public-read `
-            --region $env:REGION `
-            --content-disposition "attachment; filename=install-${{ inputs.platform }}.$ext" `
-            --endpoint-url $env:ENDPOINT_URL
+            @ExtraArgs `
+            --content-disposition "attachment; filename=install-${{ inputs.platform }}.$ext" 
 
       # Linux/macOS 用 curl
       - name: Notify backend (Linux/macOS)
