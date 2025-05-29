@@ -221,7 +221,7 @@ jobs:
           DEST=s3://$BUCKET/${{ inputs.platform }}-${{ github.run_id }}.$EXT
 
           echo "Uploading $FILE to $DEST"
-          CMD = ""
+          CMD=""
           if [ -n "$REGION" ]; then
             CMD+=" --region $REGION"
           fi
