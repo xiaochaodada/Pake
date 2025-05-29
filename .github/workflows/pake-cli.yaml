@@ -67,6 +67,14 @@ jobs:
           echo "TASK_ID=$(jq -r .TASK_ID config.json)" >> $GITHUB_ENV
           echo "CALLBACK_URL=$(jq -r .CALLBACK_URL config.json)" >> $GITHUB_ENV
 
+      - name: backend (Windows)
+        if: inputs.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "CALLBACK_URL: $env:CALLBACK_URL"
+          Write-Host "DOWNLOAD_URL: $env:DOWNLOAD_URL"
+      
+
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -258,7 +266,7 @@ jobs:
             --data-urlencode "task_id=$TASK_ID" \
             --data-urlencode "run_id=${{ github.run_id }}" \
             --data-urlencode "name=output-${{ inputs.platform }}.dmg" \
-            --data-urlencode "download_url=$env.DOWNLOAD_URL/${{ inputs.platform }}-${{ github.run_id }}.dmg"
+            --data-urlencode "download_url=$DOWNLOAD_URL/${{ inputs.platform }}-${{ github.run_id }}.dmg"
         shell: bash
 
       # Windows 用 PowerShell
