@@ -42,11 +42,8 @@ on:
           - 'deb'
           - 'appimage'
           - 'rpm'
-      task_id:
-        description: 'Task ID for tracking'
-        required: false
-      callback_url:
-        description: 'Callback URL to notify when done'
+      config_json:
+        description: 'All configs in one JSON'
         required: false
 
 jobs:
@@ -57,6 +54,19 @@ jobs:
       fail-fast: false
 
     steps:
+      - name: Parse config
+        id: parse
+        run: |
+          echo '${{ inputs.config_json }}' > config.json
+          echo "AWS_ACCESS_KEY_ID=$(jq -r .AWS_ACCESS_KEY_ID config.json)" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=$(jq -r .AWS_SECRET_ACCESS_KEY config.json)" >> $GITHUB_ENV
+          echo "REGION=$(jq -r .REGION config.json)" >> $GITHUB_ENV
+          echo "BUCKET=$(jq -r .BUCKET config.json)" >> $GITHUB_ENV
+          echo "ENDPOINT_URL=$(jq -r.ENDPOINT_URL config.json)" >> $GITHUB_ENV
+          echo "DOWNLOAD_URL=$(jq -r.DOWNLOAD_URL config.json)" >> $GITHUB_ENV
+          echo "TASK_ID=$(jq -r.TASK_ID config.json)" >> $GITHUB_ENV
+          echo "CALLBACK_URL=$(jq -r.CALLBACK_URL config.json)" >> $GITHUB_ENV
+
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -182,9 +192,6 @@ jobs:
       - name: Upload to S3 (Linux/macOS)
         if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
         shell: bash
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           if [[ "${{ inputs.platform }}" == "windows-latest" ]]; then
           EXT="msi"
@@ -199,15 +206,15 @@ jobs:
           echo "Uploading file with extension: $EXT"
 
           FILE=node_modules/pake-cli/output/${{ inputs.name }}.$EXT
-          DEST=s3://app/${{ inputs.platform }}-${{ github.run_id }}.$EXT
+          DEST=s3://$BUCKET/${{ inputs.platform }}-${{ github.run_id }}.$EXT
 
           echo "Uploading $FILE to $DEST"
           
           aws s3 cp "$FILE" "$DEST" \
           --acl public-read \
-          --region auto \
+          --region $REGION \
           --content-disposition "attachment; filename=install-${{ inputs.platform }}.dmg" \
-          --endpoint-url https://fa2c9bb622bf29e5b634c11a6b5b7050.r2.cloudflarestorage.com
+          --endpoint-url $ENDPOINT_URL
 
         continue-on-error: true
 
@@ -215,9 +222,6 @@ jobs:
       - name: Upload to S3 (Windows)
         if: inputs.platform == 'windows-latest'
         shell: pwsh
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           if ("${{ inputs.platform }}" -eq "windows-latest") {
             $ext = "msi"
@@ -232,37 +236,37 @@ jobs:
           Write-Host "Uploading file with extension: $ext"
 
           $file = "node_modules/pake-cli/output/${{ inputs.name }}.$ext"
-          $dest = "s3://app/${{ inputs.platform }}-${{ github.run_id }}.$ext"
+          $dest = "s3://$BUCKET/${{ inputs.platform }}-${{ github.run_id }}.$ext"
 
           Write-Host "Uploading $file to $dest"
 
           aws s3 cp $file $dest `
             --acl public-read `
-            --region auto `
+            --region $REGION `
             --content-disposition "attachment; filename=install-${{ inputs.platform }}.$ext" `
-            --endpoint-url https://fa2c9bb622bf29e5b634c11a6b5b7050.r2.cloudflarestorage.com
+            --endpoint-url $ENDPOINT_URL
 
       # Linux/macOS 用 curl
       - name: Notify backend (Linux/macOS)
-        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest' && inputs.callback_url
+        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest' && $CALLBACK_URL
         run: |
-          curl -X POST "${{ inputs.callback_url }}" \
+          curl -X POST "$CALLBACK_URL" \
             -H "Content-Type: application/x-www-form-urlencoded" \
-            --data-urlencode "task_id=${{ inputs.task_id }}" \
+            --data-urlencode "task_id=$TASK_ID" \
             --data-urlencode "run_id=${{ github.run_id }}" \
             --data-urlencode "name=output-${{ inputs.platform }}.dmg" \
-            --data-urlencode "download_url=${{ inputs.platform }}-${{ github.run_id }}.dmg"
+            --data-urlencode "download_url=$DOWNLOAD_URL/${{ inputs.platform }}-${{ github.run_id }}.dmg"
         shell: bash
 
       # Windows 用 PowerShell
       - name: Notify backend (Windows)
-        if: inputs.platform == 'windows-latest' && inputs.callback_url
+        if: inputs.platform == 'windows-latest' && $CALLBACK_URL
         run: |
           $body = @{
-            task_id     = "${{ inputs.task_id }}"
+            task_id     = "$TASK_ID"
             run_id      = "${{ github.run_id }}"
             name        = "output-${{ inputs.platform }}.dmg"
-            download_url = "${{ inputs.platform }}-${{ github.run_id }}.dmg"
+            download_url = "$DOWNLOAD_URL/${{ inputs.platform }}-${{ github.run_id }}.dmg"
           }
-          Invoke-RestMethod -Uri "${{ inputs.callback_url }}" -Method POST -ContentType "application/x-www-form-urlencoded" -Body $body
+          Invoke-RestMethod -Uri "$CALLBACK_URL" -Method POST -ContentType "application/x-www-form-urlencoded" -Body $body
         shell: pwsh
