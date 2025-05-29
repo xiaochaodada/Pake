@@ -288,7 +288,7 @@ jobs:
 
       # Windows 用 PowerShell
       - name: Notify backend (Windows)
-        if: inputs.platform == 'windows-latest' && env:CALLBACK_URL
+        if: inputs.platform == 'windows-latest' && env.CALLBACK_URL
         shell: pwsh
         run: |
           $CALLBACK_URL = $env:CALLBACK_URL
