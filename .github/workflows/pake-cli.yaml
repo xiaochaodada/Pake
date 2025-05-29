@@ -248,7 +248,7 @@ jobs:
 
       # Linux/macOS 用 curl
       - name: Notify backend (Linux/macOS)
-        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest' && $CALLBACK_URL
+        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest' && env.CALLBACK_URL
         run: |
           curl -X POST "$CALLBACK_URL" \
             -H "Content-Type: application/x-www-form-urlencoded" \
@@ -260,7 +260,7 @@ jobs:
 
       # Windows 用 PowerShell
       - name: Notify backend (Windows)
-        if: inputs.platform == 'windows-latest' && $CALLBACK_URL
+        if: inputs.platform == 'windows-latest' && env.CALLBACK_URL
         run: |
           $body = @{
             task_id     = "$TASK_ID"
