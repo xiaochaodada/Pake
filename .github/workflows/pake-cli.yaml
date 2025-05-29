@@ -206,15 +206,15 @@ jobs:
           echo "Uploading file with extension: $EXT"
 
           FILE=node_modules/pake-cli/output/${{ inputs.name }}.$EXT
-          DEST=s3://$env:BUCKET/${{ inputs.platform }}-${{ github.run_id }}.$EXT
+          DEST=s3://$env.BUCKET/${{ inputs.platform }}-${{ github.run_id }}.$EXT
 
           echo "Uploading $FILE to $DEST"
           
           aws s3 cp "$FILE" "$DEST" \
           --acl public-read \
-          --region $env:REGION \
+          --region $env.REGION \
           --content-disposition "attachment; filename=install-${{ inputs.platform }}.dmg" \
-          --endpoint-url $env:ENDPOINT_URL
+          --endpoint-url $env.ENDPOINT_URL
 
         continue-on-error: true
 
@@ -236,26 +236,26 @@ jobs:
           Write-Host "Uploading file with extension: $ext"
 
           $file = "node_modules/pake-cli/output/${{ inputs.name }}.$ext"
-          $dest = "s3://$env:BUCKET/${{ inputs.platform }}-${{ github.run_id }}.$ext"
+          $dest = "s3://$env.BUCKET/${{ inputs.platform }}-${{ github.run_id }}.$ext"
 
           Write-Host "Uploading $file to $dest"
 
           aws s3 cp $file $dest `
             --acl public-read `
-            --region $env:REGION `
+            --region $env.REGION `
             --content-disposition "attachment; filename=install-${{ inputs.platform }}.$ext" `
-            --endpoint-url $env:ENDPOINT_URL
+            --endpoint-url $env.ENDPOINT_URL
 
       # Linux/macOS 用 curl
       - name: Notify backend (Linux/macOS)
         if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest' && env.CALLBACK_URL
         run: |
-          curl -X POST "$env:CALLBACK_URL" \
+          curl -X POST "$env.CALLBACK_URL" \
             -H "Content-Type: application/x-www-form-urlencoded" \
-            --data-urlencode "task_id=$env:TASK_ID" \
+            --data-urlencode "task_id=$env.TASK_ID" \
             --data-urlencode "run_id=${{ github.run_id }}" \
             --data-urlencode "name=output-${{ inputs.platform }}.dmg" \
-            --data-urlencode "download_url=$env:DOWNLOAD_URL/${{ inputs.platform }}-${{ github.run_id }}.dmg"
+            --data-urlencode "download_url=$env.DOWNLOAD_URL/${{ inputs.platform }}-${{ github.run_id }}.dmg"
         shell: bash
 
       # Windows 用 PowerShell
@@ -263,10 +263,10 @@ jobs:
         if: inputs.platform == 'windows-latest' && env.CALLBACK_URL
         run: |
           $body = @{
-            task_id     = "$env:TASK_ID"
+            task_id     = "$env.TASK_ID"
             run_id      = "${{ github.run_id }}"
             name        = "output-${{ inputs.platform }}.dmg"
-            download_url = "$env:DOWNLOAD_URL/${{ inputs.platform }}-${{ github.run_id }}.dmg"
+            download_url = "$env.DOWNLOAD_URL/${{ inputs.platform }}-${{ github.run_id }}.dmg"
           }
-          Invoke-RestMethod -Uri "$env:CALLBACK_URL" -Method POST -ContentType "application/x-www-form-urlencoded" -Body $body
+          Invoke-RestMethod -Uri "$env.CALLBACK_URL" -Method POST -ContentType "application/x-www-form-urlencoded" -Body $body
         shell: pwsh
