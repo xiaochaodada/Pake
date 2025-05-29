@@ -224,35 +224,35 @@ jobs:
         continue-on-error: true
 
       # PowerShell 逻辑（Windows）
-      - name: Upload to S3 (Windows)
-        if: inputs.platform == 'windows-latest'
-        shell: pwsh
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: |
-          if ("${{ inputs.platform }}" -eq "windows-latest") {
-            $ext = "msi"
-          } elseif ("${{ inputs.platform }}" -eq "macos-latest") {
-            $ext = "dmg"
-          } elseif ("${{ inputs.platform }}" -eq "ubuntu-24.04") {
-            $ext = "deb"
-          } else {
-            $ext = "zip"
-          }
-
-          Write-Host "Uploading file with extension: $ext"
-
-          $file = "node_modules/pake-cli/output/${{ inputs.name }}.$ext"
-          $dest = "s3://app/${{ inputs.platform }}-${{ github.run_id }}.$ext"
-
-          Write-Host "Uploading $file to $dest"
-
-          aws s3 cp $file $dest `
-            --acl public-read `
-            --region auto `
-            --content-disposition "attachment; filename=install-${{ inputs.platform }}.$ext" `
-            --endpoint-url https://fa2c9bb622bf29e5b634c11a6b5b7050.r2.cloudflarestorage.com
+#      - name: Upload to S3 (Windows)
+#        if: inputs.platform == 'windows-latest'
+#        shell: pwsh
+#        env:
+#          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#        run: |
+#          if ("${{ inputs.platform }}" -eq "windows-latest") {
+#            $ext = "msi"
+#          } elseif ("${{ inputs.platform }}" -eq "macos-latest") {
+#            $ext = "dmg"
+#          } elseif ("${{ inputs.platform }}" -eq "ubuntu-24.04") {
+#            $ext = "deb"
+#          } else {
+#            $ext = "zip"
+#          }
+#
+#          Write-Host "Uploading file with extension: $ext"
+#
+#          $file = "node_modules/pake-cli/output/${{ inputs.name }}.$ext"
+#          $dest = "s3://app/${{ inputs.platform }}-${{ github.run_id }}.$ext"
+#
+#          Write-Host "Uploading $file to $dest"
+#
+#          aws s3 cp $file $dest `
+#            --acl public-read `
+#            --region auto `
+#            --content-disposition "attachment; filename=install-${{ inputs.platform }}.$ext" `
+#            --endpoint-url https://fa2c9bb622bf29e5b634c11a6b5b7050.r2.cloudflarestorage.com
 
 #      - name: Notify backend via callback
 #        if: ${{ inputs.callback_url }}
