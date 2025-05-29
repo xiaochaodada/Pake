@@ -56,6 +56,7 @@ jobs:
     steps:
       - name: Parse config
         id: parse
+        shell: bash
         run: |
           echo '${{ inputs.config_json }}' > config.json
           echo "AWS_ACCESS_KEY_ID=$(jq -r .AWS_ACCESS_KEY_ID config.json)" >> $GITHUB_ENV
