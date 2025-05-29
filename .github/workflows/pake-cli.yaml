@@ -169,29 +169,27 @@ jobs:
           Invoke-WebRequest "https://awscli.amazonaws.com/AWSCLIV2.msi" -OutFile "AWSCLIV2.msi"
           Start-Process msiexec.exe -Wait -ArgumentList '/i AWSCLIV2.msi /quiet'
 
-#      - name: List output files
-#        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
-#        run: ls -lh node_modules/pake-cli/output/
-#
       - name: List output files
+        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
+        run: ls -lh node_modules/pake-cli/output/
+        
+      - name: List output files (Windows)
+        if: inputs.platform == 'windows-latest'
         run: |
-          if [ "${{ inputs.platform }}" = "windows-latest" ]; then
-            Get-ChildItem -Path node_modules/pake-cli/output | Format-List
-          else
-            ls -lh node_modules/pake-cli/output/
-          fi
-        shell: bash
-#      - name: Compress output files into zip (Linux/macOS)
-#        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
-#        run: |
-#          cd node_modules/pake-cli
-#          zip -r output-${{ inputs.platform }}.zip output/*
-#
-#      - name: Compress output files into zip (Windows)
-#        if: inputs.platform == 'windows-latest'
-#        run: |
-#          Compress-Archive -Path node_modules\pake-cli\output\* -DestinationPath node_modules\pake-cli\output-${{ inputs.platform }}.zip
-#        shell: pwsh
+          Get-ChildItem -Path node_modules/pake-cli/output | Format-List
+        shell: pwsh
+
+      #      - name: Compress output files into zip (Linux/macOS)
+      #        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
+      #        run: |
+      #          cd node_modules/pake-cli
+      #          zip -r output-${{ inputs.platform }}.zip output/*
+      #
+      #      - name: Compress output files into zip (Windows)
+      #        if: inputs.platform == 'windows-latest'
+      #        run: |
+      #          Compress-Archive -Path node_modules\pake-cli\output\* -DestinationPath node_modules\pake-cli\output-${{ inputs.platform }}.zip
+      #        shell: pwsh
 
       - name: Upload to S3
         env:
