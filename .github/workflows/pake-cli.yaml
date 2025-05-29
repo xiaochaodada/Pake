@@ -179,7 +179,7 @@ jobs:
       - name: Install AWS CLI (macOS)
         if: inputs.platform == 'macos-latest'
         run: |
-          brew install awscli
+          brew install awscli@1
 
       - name: Install AWS CLI (Windows)
         if: inputs.platform == 'windows-latest'
