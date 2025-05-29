@@ -270,7 +270,7 @@ jobs:
            $ExtraArgs += "--endpoint-url"
            $ExtraArgs += "$env:ENDPOINT_URL"
            }
-          AWS_S3_DISABLE_CHECKSUMS=1 aws s3 cp $file $dest `
+          aws s3 cp $file $dest `
             --acl public-read `
             @ExtraArgs `
             --content-disposition "attachment; filename=install-${{ inputs.platform }}.$ext" 
