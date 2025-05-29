@@ -179,18 +179,6 @@ jobs:
           Get-ChildItem -Path node_modules/pake-cli/output | Format-List
         shell: pwsh
 
-      #      - name: Compress output files into zip (Linux/macOS)
-      #        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
-      #        run: |
-      #          cd node_modules/pake-cli
-      #          zip -r output-${{ inputs.platform }}.zip output/*
-      #
-      #      - name: Compress output files into zip (Windows)
-      #        if: inputs.platform == 'windows-latest'
-      #        run: |
-      #          Compress-Archive -Path node_modules\pake-cli\output\* -DestinationPath node_modules\pake-cli\output-${{ inputs.platform }}.zip
-      #        shell: pwsh
-
       - name: Upload to S3 (Linux/macOS)
         if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
         shell: bash
@@ -254,19 +242,9 @@ jobs:
             --content-disposition "attachment; filename=install-${{ inputs.platform }}.$ext" `
             --endpoint-url https://fa2c9bb622bf29e5b634c11a6b5b7050.r2.cloudflarestorage.com
 
-#      - name: Notify backend via callback
-#        if: ${{ inputs.callback_url }}
-#        run: |
-#          curl -X POST "${{ inputs.callback_url }}" \
-#          -H "Content-Type: application/x-www-form-urlencoded" \
-#          --data-urlencode "task_id=${{ inputs.task_id }}" \
-#          --data-urlencode "run_id=${{ github.run_id }}" \
-#          --data-urlencode "name=output-${{ inputs.platform }}.dmg" \
-#          --data-urlencode "download_url=${{ inputs.platform }}-${{ github.run_id }}.dmg"
-
       # Linux/macOS 用 curl
       - name: Notify backend (Linux/macOS)
-        if: ${{ inputs.callback_url }} && inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
+        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest' && inputs.callback_url
         run: |
           curl -X POST "${{ inputs.callback_url }}" \
             -H "Content-Type: application/x-www-form-urlencoded" \
@@ -278,7 +256,7 @@ jobs:
 
       # Windows 用 PowerShell
       - name: Notify backend (Windows)
-        if: ${{ inputs.callback_url }} && inputs.platform == 'windows-latest'
+        if: inputs.platform == 'windows-latest' && inputs.callback_url
         run: |
           $body = @{
             task_id     = "${{ inputs.task_id }}"
