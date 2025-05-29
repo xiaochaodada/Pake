@@ -201,6 +201,8 @@ jobs:
       - name: Upload to S3 (Linux/macOS)
         if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
         shell: bash
+        env:
+          AWS_S3_DISABLE_CHECKSUMS: 1
         run: |
           echo "Bucket: $BUCKET"
           echo "Region: $REGION"
