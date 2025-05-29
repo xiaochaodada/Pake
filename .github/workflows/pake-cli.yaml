@@ -68,13 +68,13 @@ jobs:
           echo "TASK_ID=$(jq -r .TASK_ID config.json)" >> $GITHUB_ENV
           echo "CALLBACK_URL=$(jq -r .CALLBACK_URL config.json)" >> $GITHUB_ENV
 
-      - name: backend (Windows)
+      - name: config_json (Windows)
         if: inputs.platform == 'windows-latest'
         shell: pwsh
         run: |
           Write-Host "CALLBACK_URL: $env:CALLBACK_URL"
           Write-Host "DOWNLOAD_URL: $env:DOWNLOAD_URL"
-      
+
 
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -273,6 +273,7 @@ jobs:
       # Windows 用 PowerShell
       - name: Notify backend (Windows)
         if: inputs.platform == 'windows-latest' && env.CALLBACK_URL
+        shell: pwsh
         run: |
           $body = @{
             task_id     = "$env:TASK_ID"
@@ -280,5 +281,5 @@ jobs:
             name        = "output-${{ inputs.platform }}.dmg"
             download_url = "$env.DOWNLOAD_URL/${{ inputs.platform }}-${{ github.run_id }}.dmg"
           }
-          Invoke-RestMethod -Uri "$env:CALLBACK_URL" -Method POST -ContentType "application/x-www-form-urlencoded" -Body $body
-        shell: pwsh
+          $CALLBACK_URL = $env:CALLBACK_URL
+          Invoke-RestMethod -Uri "$CALLBACK_URL" -Method POST -ContentType "application/x-www-form-urlencoded" -Body $body
