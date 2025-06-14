@@ -207,6 +207,31 @@ jobs:
             echo "Upload failed"
             exit 1
           fi
+      # Windows 平台上传逻辑
+      - name: Upload file via curl and extract URL (Windows)
+        if: inputs.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $ext = "msi"
+          $file = "node_modules/pake-cli/output/${{ inputs.name }}.$ext"
+          $filename = "${{ inputs.platform }}-${{ github.run_id }}.$ext"
+
+          Write-Host "Uploading $file to $env:UPLOAD_URL"
+
+          $response = curl.exe -s -X POST "$env:UPLOAD_URL" `
+            -F "file=@$file;filename=$filename" `
+            -H "Expect:"
+
+          Write-Host "Server response: $response"
+
+          $parsed = $response | ConvertFrom-Json
+          if ($parsed.code -eq 0) {
+            Write-Host "Upload succeeded: $($parsed.url)"
+            echo "FILE_URL=$($parsed.url)" >> $env:GITHUB_ENV
+          } else {
+            Write-Error "Upload failed"
+            exit 1
+          }
 
       # Linux/macOS 用 curl
       - name: Notify backend (Linux/macOS)
