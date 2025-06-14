@@ -59,11 +59,7 @@ jobs:
         shell: bash
         run: |
           echo '${{ inputs.config_json }}' > config.json
-          echo "AWS_ACCESS_KEY_ID=$(jq -r .AWS_ACCESS_KEY_ID config.json)" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=$(jq -r .AWS_SECRET_ACCESS_KEY config.json)" >> $GITHUB_ENV
-          echo "REGION=$(jq -r .REGION config.json)" >> $GITHUB_ENV
-          echo "BUCKET=$(jq -r .BUCKET config.json)" >> $GITHUB_ENV
-          echo "ENDPOINT_URL=$(jq -r .ENDPOINT_URL config.json)" >> $GITHUB_ENV
+          echo "UPLOAD_URL=$(jq -r .UPLOAD_URL config.json)" >> $GITHUB_ENV               
           echo "DOWNLOAD_URL=$(jq -r .DOWNLOAD_URL config.json)" >> $GITHUB_ENV
           echo "TASK_ID=$(jq -r .TASK_ID config.json)" >> $GITHUB_ENV
           echo "CALLBACK_URL=$(jq -r .CALLBACK_URL config.json)" >> $GITHUB_ENV
@@ -72,6 +68,7 @@ jobs:
         if: inputs.platform == 'windows-latest'
         shell: pwsh
         run: |
+          Write-Host "UPLOAD_URL: $env:UPLOAD_URL"
           Write-Host "CALLBACK_URL: $env:CALLBACK_URL"
           Write-Host "DOWNLOAD_URL: $env:DOWNLOAD_URL"
 
@@ -169,26 +166,6 @@ jobs:
             node_modules/pake-cli/src-tauri/target/
           key: ${{ inputs.platform }}-cargo-${{ hashFiles('node_modules/pake-cli/src-tauri/Cargo.lock') }}
 
-      - name: Install AWS CLI (Ubuntu)
-        if: inputs.platform == 'ubuntu-24.04'
-        run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install
-
-      - name: Install AWS CLI (macOS)
-        if: inputs.platform == 'macos-latest'
-        run: |
-          brew install awscli@1
-          aws --version
-
-      - name: Install AWS CLI (Windows)
-        if: inputs.platform == 'windows-latest'
-        shell: powershell
-        run: |
-          Invoke-WebRequest "https://awscli.amazonaws.com/AWSCLIV2.msi" -OutFile "AWSCLIV2.msi"
-          Start-Process msiexec.exe -Wait -ArgumentList '/i AWSCLIV2.msi /quiet'
-
       - name: List output files
         if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
         run: ls -lh node_modules/pake-cli/output/
@@ -199,81 +176,37 @@ jobs:
           Get-ChildItem -Path node_modules/pake-cli/output | Format-List
         shell: pwsh
 
-      - name: Upload to S3 (Linux/macOS)
-        if: inputs.platform == 'ubuntu-24.04' || inputs.platform == 'macos-latest'
+      - name: Upload file via curl and extract URL (Linux/macOS)
+        if: inputs.platform == 'macos-latest' || inputs.platform == 'ubuntu-24.04'
         shell: bash
-        env:
-          AWS_S3_DISABLE_CHECKSUMS: 1
         run: |
-          echo "Bucket: $BUCKET"
-          echo "Region: $REGION"
-          echo "Endpoint: $ENDPOINT_URL"
-          if [[ "${{ inputs.platform }}" == "windows-latest" ]]; then
-          EXT="msi"
-          elif [[ "${{ inputs.platform }}" == "macos-latest" ]]; then
-          EXT="dmg"
+          if [[ "${{ inputs.platform }}" == "macos-latest" ]]; then
+            EXT="dmg"
           elif [[ "${{ inputs.platform }}" == "ubuntu-24.04" ]]; then
-          EXT="deb"
+            EXT="deb"
           else
-          EXT="zip"
+            EXT="zip"
           fi
 
-          echo "Uploading file with extension: $EXT"
+          FILE="node_modules/pake-cli/output/${{ inputs.name }}.${EXT}"
+          FILENAME="${{ inputs.platform }}-${{ github.run_id }}.${EXT}"
 
-          FILE=node_modules/pake-cli/output/${{ inputs.name }}.$EXT
-          DEST=s3://$BUCKET/${{ inputs.platform }}-${{ github.run_id }}.$EXT
+          echo "Uploading $FILE to $UPLOAD_URL"
+          RESPONSE=$(curl -s -X POST "$UPLOAD_URL" \
+            -F "file=@$FILE;filename=$FILENAME" \
+            -H "Expect:")
 
-          echo "Uploading $FILE to $DEST"
-          CMD=""
-          if [ -n "$REGION" ]; then
-            CMD+=" --region $REGION"
+          echo "Server response: $RESPONSE"
+
+          CODE=$(echo "$RESPONSE" | jq -r '.code')
+          if [[ "$CODE" == "0" ]]; then
+            FILE_URL=$(echo "$RESPONSE" | jq -r '.url')
+            echo "Upload succeeded: $FILE_URL"
+            echo "FILE_URL=$FILE_URL" >> $GITHUB_ENV
+          else
+            echo "Upload failed"
+            exit 1
           fi
-          if [ -n "$ENDPOINT_URL" ]; then
-            CMD+=" --endpoint-url $ENDPOINT_URL"
-          fi  
-          
-          aws s3 cp "$FILE" "$DEST" \
-          --acl public-read \
-          $CMD \
-          --content-disposition "attachment; filename=install-${{ inputs.platform }}.dmg" 
-
-        continue-on-error: true
-
-      # PowerShell 逻辑（Windows）
-      - name: Upload to S3 (Windows)
-        if: inputs.platform == 'windows-latest'
-        shell: pwsh
-        run: |
-          if ("${{ inputs.platform }}" -eq "windows-latest") {
-            $ext = "msi"
-          } elseif ("${{ inputs.platform }}" -eq "macos-latest") {
-            $ext = "dmg"
-          } elseif ("${{ inputs.platform }}" -eq "ubuntu-24.04") {
-            $ext = "deb"
-          } else {
-            $ext = "zip"
-          }
-
-          Write-Host "Uploading file with extension: $ext"
-
-          $file = "node_modules/pake-cli/output/${{ inputs.name }}.$ext"
-          $dest = "s3://$env:BUCKET/${{ inputs.platform }}-${{ github.run_id }}.$ext"
-
-          Write-Host "Uploading $file to $dest"
-          $ExtraArgs = @()
-  
-          if ($env:REGION) {
-           $ExtraArgs += "--region"
-           $ExtraArgs += "$env:REGION"
-           }
-          if ($env:ENDPOINT_URL) {
-           $ExtraArgs += "--endpoint-url"
-           $ExtraArgs += "$env:ENDPOINT_URL"
-           }
-          aws s3 cp $file $dest `
-            --acl public-read `
-            @ExtraArgs `
-            --content-disposition "attachment; filename=install-${{ inputs.platform }}.$ext" 
 
       # Linux/macOS 用 curl
       - name: Notify backend (Linux/macOS)
@@ -284,7 +217,7 @@ jobs:
             -H "Content-Type: application/x-www-form-urlencoded" \
             --data-urlencode "task_id=$TASK_ID" \
             --data-urlencode "run_id=${{ github.run_id }}" \
-            --data-urlencode "download_url=$DOWNLOAD_URL/${{ inputs.platform }}-${{ github.run_id }}.dmg"
+            --data-urlencode "download_url=$FILE_URL"
 
       # Windows 用 PowerShell
       - name: Notify backend (Windows)
@@ -296,6 +229,6 @@ jobs:
           $body = @{
             task_id     = "$env:TASK_ID"
             run_id      = "${{ github.run_id }}"
-            download_url = "$env:DOWNLOAD_URL/${{ inputs.platform }}-${{ github.run_id }}.msi"
+            download_url = "$env:FILE_URL"
           }
           Invoke-RestMethod -Uri "$CALLBACK_URL" -Method POST -ContentType "application/x-www-form-urlencoded" -Body $body
