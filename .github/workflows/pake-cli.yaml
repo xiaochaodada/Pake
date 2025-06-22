@@ -215,9 +215,12 @@ jobs:
           $ext = "msi"
           $file = "node_modules/pake-cli/output/${{ inputs.name }}.$ext"
           $filename = "${{ inputs.platform }}-${{ github.run_id }}.$ext"
-
+          
           Write-Host "Uploading $file to $env:UPLOAD_URL"
-
+          if (-Not (Test-Path $file)) {
+            Write-Error "File not found: $file"
+            exit 1
+          }
           $response = curl.exe -s -X POST "$env:UPLOAD_URL" `
             -F "file=@$file;filename=$filename" `
             -H "Expect:"
